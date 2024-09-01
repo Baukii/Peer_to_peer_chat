@@ -12,5 +12,3 @@ output = ConnectedSocket.recv(1024)
 print(output.decode('utf-8'))
 
 InputBezInterupcije()
-
-

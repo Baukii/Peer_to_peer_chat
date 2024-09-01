@@ -17,6 +17,7 @@ def send_data(sock, address):
             print("Prekinuto slanje podataka.")
             break
 
+
 def InputBezInterupcije():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_address = ('10.61.1.100', 33433)

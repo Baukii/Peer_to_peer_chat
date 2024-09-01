@@ -18,7 +18,7 @@ def send_data(sock, address):
             break
 def InputBezInterupcije():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_address = ('localhost', 12345)
+    server_address = ('10.61.1.100', 33433)
 
     recv_thread = threading.Thread(target=receive_data, args=(sock,))
     recv_thread.start()

@@ -1,6 +1,7 @@
 import socket
 import threading
 from other import send_messages, receive_messages
+from connection import PovezivanjeNaLogIn
 
 ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ServerSocket.bind(('10.61.1.100', 33433))
@@ -12,3 +13,7 @@ print("Accepted connection from " + str(addr))
 threading.Thread(target=send_messages, args=(ConnectedSocket,)).start()
 threading.Thread(target=receive_messages, args=(ConnectedSocket,)).start()
 
+
+ConnectedSockets=PovezivanjeNaLogIn()
+threading.Thread(target=send_messages, args=(ConnectedSockets[0],)).start()
+threading.Thread(target=receive_messages, args=(ConnectedSockets[0],)).start()

@@ -14,7 +14,7 @@ def receive_messages(socket_obj):
         try:   
             message = socket_obj.recv(1024).decode('utf-8')
             if message.lower() == "stop!":
-                print("n\Friend has left the chat")
+                print("\nFriend has left the chat")
                 break
             sys.stdout.write("\033[F") #move the cursor up one line
             print("\n"f"Friend: {message}")

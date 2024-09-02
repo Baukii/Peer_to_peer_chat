@@ -51,3 +51,14 @@ def handle_client_connection(client_socket, addr):
     print(f"Accepted connection from {addr}")
     threading.Thread(target=send_messages, args=(client_socket,)).start()
     threading.Thread(target=receive_messages, args=(client_socket,)).start()
+    
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8', 1))
+        local_ip = s.getsockname()[0]
+    except Exception:
+        local_ip = '127.0.0.1'
+    finally:
+        s.close()
+    return local_ip

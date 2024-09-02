@@ -1,11 +1,11 @@
 import socket
 import threading
-from connection import listen_for_client_ip, handle_client_connection,PovezivanjeNaLogIn,get_local_ip
+from connection import listen_for_client_ip, handle_client_connection, PovezivanjeNaLogIn, get_local_ip
 from other import send_messages, receive_messages
 
 def start_tcp_server():
     tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_server_socket.bind((get_local_ip(), 33433)) 
+    tcp_server_socket.bind((get_local_ip(), 33434))
     tcp_server_socket.listen()
     
     print("TCP server is listening for incoming connections...")
@@ -16,7 +16,6 @@ def start_tcp_server():
 
         threading.Thread(target=handle_client_connection, args=(client_socket, client_address)).start()
 
-
 threading.Thread(target=listen_for_client_ip, daemon=True).start()
 start_tcp_server()
 
@@ -26,4 +25,3 @@ if ConnectedSockets:
     print("Connected to the server. You can start chatting.")
     threading.Thread(target=send_messages, args=(client_socket,)).start()
     threading.Thread(target=receive_messages, args=(client_socket,)).start()
-

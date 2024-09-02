@@ -11,3 +11,4 @@ print("Accepted connection from " + str(addr))
 
 threading.Thread(target=send_messages, args=(ConnectedSocket,)).start()
 threading.Thread(target=receive_messages, args=(ConnectedSocket,)).start()
+

@@ -1,19 +1,21 @@
 import socket
 import threading
-from connection import listen_for_client_ip, handle_client_connection
+from other import send_messages, receive_messages
+from connection import get_local_ip, handle_client
 
-def start_tcp_server():
-    tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_server_socket.bind(('10.61.1.105', 33433)) 
-    tcp_server_socket.listen()
-    
-    print("TCP server is listening for incoming connections...")
+def main():
+    ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ServerSocket.bind((get_local_ip(), 33433))
+    ServerSocket.listen()
+    print(f"Server is listening on {get_local_ip()}:33433")
+
+    AllConnectedSockets = []
+
     while True:
-        client_socket, client_address = tcp_server_socket.accept()
-        print(f"Accepted connection from {client_address}")
+        ConnectedSocket, addr = ServerSocket.accept()
+        AllConnectedSockets.append(ConnectedSocket)
+        # Proslijedi sve potrebne argumente funkciji handle_client
+        threading.Thread(target=handle_client, args=(ConnectedSocket, addr, AllConnectedSockets)).start()
 
-        threading.Thread(target=handle_client_connection, args=(client_socket, client_address)).start()
-
-
-threading.Thread(target=listen_for_client_ip, daemon=True).start()
-start_tcp_server()
+if __name__ == "__main__":
+    main()

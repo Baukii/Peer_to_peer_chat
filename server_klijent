@@ -1,4 +1,4 @@
-from connection import start_server, connect_to_server, listen_for_broadcast, MyIP
+from connection import start_server, listen_for_broadcast, connect_to_server, MyIP
 from other import send_messages, receive_messages
 import threading
 
@@ -11,12 +11,9 @@ def main():
     broadcast_thread = threading.Thread(target=listen_for_broadcast, daemon=True)
     broadcast_thread.start()
 
-    # Wait for broadcasts to connect to other peers
     while True:
-        # User input to connect to another peer
-        ip = input("Enter IP to connect to (or press Enter to skip): ")
-        if ip:
-            connect_to_server(ip)
+        # Wait to automatically connect to discovered peers
+        pass
 
 if __name__ == "__main__":
     main()

@@ -1,10 +1,10 @@
 import socket
 import threading
-from connection import listen_for_client_ip, handle_client_connection
+from connection import listen_for_client_ip, handle_client_connection,get_local_ip
 
 def start_tcp_server():
     tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_server_socket.bind(('10.61.1.105', 33433)) 
+    tcp_server_socket.bind((get_local_ip(), 33533)) 
     tcp_server_socket.listen()
     
     print("TCP server is listening for incoming connections...")

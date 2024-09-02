@@ -11,12 +11,17 @@ def send_messages(socket_obj):
 
 def receive_messages(socket_obj):
     while True:
-        message = socket_obj.recv(1024).decode('utf-8')
-        if message.lower() == "stop!":
+        try:   
+            message = socket_obj.recv(1024).decode('utf-8')
+            if message.lower() == "stop!":
+                print("\nFriend has left the chat")
+                break
+            sys.stdout.write("\033[F") #move the cursor up one line
+            print("\n"f"Friend: {message}")
+            print("You: ",end="")
+        except ConnectionResetError:
+            print("\nConnection closed by the other side.")
             break
-        print("\n"f"Friend: {message}")
-        print("You: ",end="")
-
 def broadcast_message(message, sender_socket, all_connected_sockets):
     for client_socket in all_connected_sockets:
         if client_socket != sender_socket:

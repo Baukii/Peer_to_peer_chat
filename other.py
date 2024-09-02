@@ -29,8 +29,3 @@ def broadcast_message(message, sender_socket, all_connected_sockets):
                 client_socket.sendall(message)
             except Exception as e:
                 print(f"Error sending message to {client_socket}: {e}")
-<<<<<<< HEAD
-                all_connected_sockets.remove(client_socket)
-=======
-                all_connected_sockets.remove(client_socket)
->>>>>>> UDPkojiradi

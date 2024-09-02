@@ -17,8 +17,7 @@ def PovezivanjeNaLogIn():
     # Broadcast IP adresu na UDP portu
     UDPsender.sendto(msg, ("255.255.255.255", 5005))
     UDPsender.close()
-
-    # Poveži se na TCP port
+    
     TCPSocket = InitTCPSocket()
     TCPSocket.connect((get_local_ip(), 33533))  # IP adresa servera treba da bude ovde
     return [TCPSocket]

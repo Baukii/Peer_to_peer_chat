@@ -9,6 +9,7 @@ def send_messages(socket_obj):
         if message.lower() == "stop!":
             break
 
+
 def receive_messages(socket_obj):
     while True:
         try:   

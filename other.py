@@ -1,5 +1,4 @@
 import socket
-import threading
 
 def send_messages(socket_obj):
     while True:
@@ -13,5 +12,5 @@ def receive_messages(socket_obj):
         message = socket_obj.recv(1024).decode('utf-8')
         if message.lower() == "stop!":
             break
-        print("\n"f"Friend: {message}")
-        print("You: ",end="")
+        print(f"\nFriend: {message}")
+        print("You: ", end="")

@@ -22,3 +22,4 @@ def receive_messages(socket_obj):
         except ConnectionResetError:
             print("\nConnection closed by the other side.")
             break
+

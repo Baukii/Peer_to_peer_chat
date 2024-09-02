@@ -43,7 +43,8 @@ def PovezivanjeNaLogIn():
             pass
         else:
             ConnectedSockets.append(MySocket)
-            print(f"Povezano na {ip} \nPokušaj povezivanja na ostale uređaje u mreži")
+            print(f"Povezano na {ip}")
+            breakk=True
 
 
     for i in range(256):

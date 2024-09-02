@@ -1,0 +1,22 @@
+from connection import start_server, connect_to_server, listen_for_broadcast, MyIP
+from other import send_messages, receive_messages
+import threading
+
+def main():
+    # Start the server thread
+    server_thread = threading.Thread(target=start_server, args=(MyIP(),), daemon=True)
+    server_thread.start()
+
+    # Start listening for broadcasts to connect to other peers
+    broadcast_thread = threading.Thread(target=listen_for_broadcast, daemon=True)
+    broadcast_thread.start()
+
+    # Wait for broadcasts to connect to other peers
+    while True:
+        # User input to connect to another peer
+        ip = input("Enter IP to connect to (or press Enter to skip): ")
+        if ip:
+            connect_to_server(ip)
+
+if __name__ == "__main__":
+    main()

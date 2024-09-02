@@ -28,29 +28,22 @@ def get_local_ip():
         s.close()
     return local_ip
 
-def InitSocket():
+def InitTCPSocket():
     return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def InitUDPSocket():
+    return socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
 def PovezivanjeNaLogIn():
-    ConnectedSockets = []
-    threads = []
-    print("Pokušaj povezivanja na uređaje u mreži")
-    def connect_to_ip(ip):
-        MySocket = InitSocket()
-        try:
-            MySocket.connect((ip, 33433))
-        except:
-            pass
-        else:
-            ConnectedSockets.append(MySocket)
-            print(f"Povezano na {ip} \nPokušaj povezivanja na ostale uređaje u mreži")
+    UDPsender = InitUDPSocket()
+    UDPsender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
+    # Uzmi lokalnu IP adresu
+    local_ip = socket.gethostbyname(socket.gethostname())
+    msg = local_ip.encode('utf-8')
+    UDPsender.sendto(msg, ("255.255.255.255", 5005))
+    UDPsender.close()
 
-    for i in range(256):
-        ip = f'10.61.1.{i}'
-        thread = threading.Thread(target=connect_to_ip, args=(ip,))
-        threads.append(thread)
-        thread.start()
-    for thread in threads:
-        thread.join()
-    return ConnectedSockets
+    # Poveži se na TCP port
+    TCPSocket = InitTCPSocket()
+    TCPSocket.connect(('10.61.1.105', 33433))  # IP adresa servera treba da bude ovde
+    return [TCPSocket]

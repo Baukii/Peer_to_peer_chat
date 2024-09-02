@@ -19,7 +19,7 @@ def PovezivanjeNaLogIn():
             print(f"Povezano na {ip} \nPokušaj povezivanje na ostale uređaje u mreži")
 
 
-    for i in range(105, 256):
+    for i in range(256):
         ip = f'10.61.1.{i}'
         thread = threading.Thread(target=connect_to_ip, args=(ip,))
         threads.append(thread)

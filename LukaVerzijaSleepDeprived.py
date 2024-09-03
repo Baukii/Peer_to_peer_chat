@@ -3,6 +3,7 @@ import threading
 import os
 import time
 
+
 class Peer:
     def __init__(self, host, port):
         self.host = host
@@ -92,7 +93,7 @@ class Peer:
                 # Wait to receive discovery messages
                 time.sleep(10)
             except Exception as e:
-                print(f"Error in discovery loop: {e}")
+                pass
 
     def list_peers(self):
         if self.peer_usernames:
@@ -104,9 +105,8 @@ class Peer:
 
     def handle_whisper(self, message):
         try:
-            
             _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(":", 1)
+            target_username, text = rest.split(':', 1)
             target_username = target_username.strip()
             text = text.strip()
 
@@ -124,7 +124,7 @@ class Peer:
                 print(f"Error: User '{target_username}' not found.")
 
         except ValueError:
-            print("Error: Invalid whisper format. Use '<whisper> username:message'.")
+            print("Error: Invalid whisper format. Use '<whisper> <username>: <message>'.")
 
     def handle_ping(self):
         print("Sending ping to all peers...")
@@ -191,7 +191,7 @@ Available commands:
 
 if __name__ == "__main__":
     host = '0.0.0.0'  # Use 0.0.0.0 to bind to all network interfaces
-    port = 15011  # Initial port number; it will change if already in use
+    port = 15012  # Initial port number; it will change if already in use
 
     peer = Peer(host, port)
     peer.start()

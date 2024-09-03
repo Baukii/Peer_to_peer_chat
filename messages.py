@@ -22,13 +22,14 @@ def receive_messages(socket_obj):
         except ConnectionResetError:
             print("\nConnection closed by the other side.")
             break
-def broadcast_message(message, sender_socket, all_connected_sockets):
+def broadcast_message(message, sender_socket, all_connected_sockets, exclude_sender=True):
     for client_socket in all_connected_sockets:
-        if client_socket != sender_socket:
+        if not exclude_sender or client_socket != sender_socket:
             try:
                 client_socket.sendall(message)
             except Exception as e:
                 print(f"Error sending message to {client_socket}: {e}")
+
 def recv_from_socket(client_socket, buffer_size=1024):
     try:
         return client_socket.recv(buffer_size).decode("utf-8")

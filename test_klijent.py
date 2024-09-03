@@ -1,6 +1,6 @@
 import threading
 from connection import *
-from other import *
+from messages import *
 AllConnectedSockets = PovezivanjeNaLogIn()
 MyConnectedSockets=[]
 for i in AllConnectedSockets:

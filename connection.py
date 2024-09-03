@@ -1,6 +1,6 @@
 import socket
 import threading
-from other import *
+from messages import *
 
 def handle_client(client_socket, addr, all_connected_sockets):
     print(f"Veza uspostavljena sa {addr}")

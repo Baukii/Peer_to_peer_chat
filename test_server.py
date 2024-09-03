@@ -1,6 +1,6 @@
 import socket
 import threading
-from other import *
+from messages import *
 from connection import *
 
 ServerSocket = InitTCPSocket()

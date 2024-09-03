@@ -29,3 +29,21 @@ def broadcast_message(message, sender_socket, all_connected_sockets):
                 client_socket.sendall(message)
             except Exception as e:
                 print(f"Error sending message to {client_socket}: {e}")
+def recv_from_socket(client_socket, buffer_size=1024):
+    try:
+        return client_socket.recv(buffer_size).decode("utf-8")
+    except Exception as e:
+        print(f"Error receiving message: {e}")
+        return ""
+def handle_client_communication(client_socket, all_connected_sockets):
+    while True:
+        message = recv_from_socket(client_socket)
+        if message:
+            print(f"Received: {message}")
+            broadcast_message(message.encode("utf-8"), client_socket, all_connected_sockets)
+
+def SendAllConnected(all_connected_sockets):
+    while True:
+        message = input("You: ").encode("utf-8")
+        broadcast_message(message, None, all_connected_sockets, exclude_sender=False)
+

@@ -23,6 +23,7 @@ class Peer:
         server_socket.bind((self.host, self.port))
         print(f"Bound to {self.host}:{self.port}")
         return server_socket
+    
 
     def listen_for_messages(self):
         while True:

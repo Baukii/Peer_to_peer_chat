@@ -46,7 +46,7 @@ class Peer:
                 else:
                     print(f"\n{decoded_message}\n")
             except Exception as e:
-                print(f"Error receiving message: {e}")
+                pass
 
     def send_message(self, message):
         if not self.username:
@@ -88,7 +88,6 @@ class Peer:
                 # Broadcast discovery message
                 broadcast_message = "<discovery>"
                 self.server_socket.sendto(broadcast_message.encode(), ('<broadcast>', self.port))
-                print(f"Broadcasted discovery message on port {self.port}")
                 
                 # Wait to receive discovery messages
                 time.sleep(10)
@@ -105,8 +104,9 @@ class Peer:
 
     def handle_whisper(self, message):
         try:
+            
             _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(':', 1)
+            target_username, text = rest.split(":", 1)
             target_username = target_username.strip()
             text = text.strip()
 
@@ -124,7 +124,7 @@ class Peer:
                 print(f"Error: User '{target_username}' not found.")
 
         except ValueError:
-            print("Error: Invalid whisper format. Use '<whisper> <username>: <message>'.")
+            print("Error: Invalid whisper format. Use '<whisper> username:message'.")
 
     def handle_ping(self):
         print("Sending ping to all peers...")

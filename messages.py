@@ -35,7 +35,7 @@ def recv_from_socket(client_socket, buffer_size=1024):
         return client_socket.recv(buffer_size).decode("utf-8")
     except Exception as e:
         print(f"Error receiving message: {e}")
-        return ""
+        return False
 def handle_client_communication(client_socket, all_connected_sockets):
     while True:
         message = recv_from_socket(client_socket)

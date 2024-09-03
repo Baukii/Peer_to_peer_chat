@@ -127,14 +127,16 @@ class Peer:
 
         except ValueError:
             print("Error: Invalid whisper format. Use '<whisper> username:message'.")
+            
+def listen_for_pings(self):
+    while True:
+        try:
+            data, addr = self.server_socket.recvfrom(1024)  # Primi poruku
+            if data == b'ping':
+                self.server_socket.sendto(b'pong', addr)  # Pošalji odgovor "pong"
+        except OSError:
+            break
 
-    def handle_ping(self):
-        print("Sending ping to all peers...")
-        for peer in self.peers:
-            try:
-                self.server_socket.sendto(b'ping', peer)
-            except OSError:
-                print(f"Failed to send ping to {peer}")
 
     def show_status(self):
         print(f"Connected peers: {len(self.peers)}")

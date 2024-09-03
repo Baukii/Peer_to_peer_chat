@@ -59,3 +59,6 @@ def handle_client_communication(client_socket, all_connected_sockets):
         if message:
             print(f"Received: {message}")
             broadcast_message(message.encode("utf-8"), client_socket, all_connected_sockets)
+        else:
+            all_connected_sockets.remove(client_socket)
+        

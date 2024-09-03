@@ -20,8 +20,5 @@ send_thread.start()
 while True:
     if MyConnectedSockets:
         for client_socket in MyConnectedSockets:
-            try:
-                communication_thread = threading.Thread(target=handle_client_communication, args=(client_socket, MyConnectedSockets))
-                communication_thread.start()
-            except:
-                MyConnectedSockets.remove(client_socket)
+            communication_thread = threading.Thread(target=handle_client_communication, args=(client_socket, MyConnectedSockets))
+            communication_thread.start()

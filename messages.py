@@ -12,7 +12,7 @@ def send_messages(socket_obj):
 def receive_messages(socket_obj):
     while True:
         try:   
-            message = socket_obj.recv(1024).decode('utf-8')
+            message = socket_obj.recv(32).decode('utf-8')
             if message.lower() == "stop!":
                 print("\nFriend has left the chat")
                 break

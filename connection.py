@@ -42,13 +42,16 @@ def PovezivanjeNaLogIn():
     # Poveži se na server
     TCPSocket = InitTCPSocket()
     TCPSocket.connect(('10.61.1.105', 33433))
-    AllConnectedSockets=eval(TCPSocket.recv(4096).decode("utf-8")) #
+    AllConnectedSockets=eval(TCPSocket.recv(64).decode("utf-8")) #
     return AllConnectedSockets
 def InitUDPSocket():
     return socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 def ListeningForConnections(MyConnectedSockets):
     ServerSocket = InitTCPSocket()
-    ServerSocket.bind((get_local_ip(), 22222))
+    try:
+        ServerSocket.bind((get_local_ip(), 22222))
+    except:
+        pass
     ServerSocket.listen()
     while True:
         ConnectedSocket, addr = ServerSocket.accept()

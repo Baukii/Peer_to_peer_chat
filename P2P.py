@@ -31,20 +31,18 @@ class Peer:
             try:
                 message, addr = self.server_socket.recvfrom(1024)
                 decoded_message = message.decode()
-
                 if addr not in self.peers and addr != (self.host, self.port):
                     self.peers.append(addr)  # Add new peer
 
                 if decoded_message.startswith('<username>'):
                     _, username = decoded_message.split(':', 1)
-                    self.peer_usernames[addr] = username.strip()
+                    self.peer_usernames.update(addr=username)
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
                 elif decoded_message == 'pong':
                     pass  # Suppress pong messages
                 elif decoded_message.startswith('<discovery>'):
-                    # Handle discovery message without printing
-                    self.server_socket.sendto(f"<username>{self.username}".encode(), addr)
+                    self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
                 else:
                     sys.stdout.write("\033[F") #move the cursor up one line
                     print(f"\n{decoded_message}")
@@ -153,7 +151,6 @@ Available commands:
 <list>       - List all usernames of peers.
 <whisper>    - Send a private message to a specific user (e.g., <whisper> username: message).
 <ping>       - Send a ping to check if a peer is online.
-<status>     - Show the number of connected peers and their addresses.
 <clear>      - Clear the chat history from the console.
 <help>       - Show this help message.
 <stop>       - End the chat and exit the chatroom.

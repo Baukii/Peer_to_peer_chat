@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 import time
+import sys
 
 class Peer:
     def __init__(self, host, port):
@@ -45,7 +46,9 @@ class Peer:
                     # Handle discovery message without printing
                     self.server_socket.sendto(f"<username>{self.username}".encode(), addr)
                 else:
-                    print(f"\n{decoded_message}\n")
+                    sys.stdout.write("\033[F") #move the cursor up one line
+                    print(f"\n{decoded_message}")
+                    print(self.username+": ",end="")
             except Exception as e:
                 pass
 
@@ -77,7 +80,7 @@ class Peer:
             return
 
         full_message = f"{self.username}: {message}"
-        for peer in self.peers:
+        for peer in self.peers[1:]:
             try:
                 self.server_socket.sendto(full_message.encode(), peer)
             except OSError:
@@ -192,7 +195,7 @@ Available commands:
 
 if __name__ == "__main__":
     host = '0.0.0.0'  # Use 0.0.0.0 to bind to all network interfaces
-    port = 15011  # Initial port number; it will change if already in use
+    port = 15013  # Initial port number; it will change if already in use
 
     peer = Peer(host, port)
     peer.start()

@@ -84,6 +84,7 @@ class Peer:
             except OSError:
                 print(f"Failed to send message to {peer}")
 
+
     def discovery_loop(self):
         while True:
             try:

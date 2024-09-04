@@ -31,24 +31,31 @@ class Peer:
             try:
                 message, addr = self.server_socket.recvfrom(1024)
                 decoded_message = message.decode()
+                
                 if addr not in self.peers and addr != (self.host, self.port):
                     self.peers.append(addr)  # Add new peer
-
+                
                 if decoded_message.startswith('<username>'):
-                    _, username = decoded_message.split(':', maxsplit=2)
-                    self.peer_usernames.update({username:addr})
+                    _, username = decoded_message.split(':', maxsplit=1)
+                    self.peer_usernames[username] = addr
+                    
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
+                    
                 elif decoded_message == 'pong':
                     pass  # Suppress pong messages
+                
                 elif decoded_message.startswith('<discovery>'):
-                    self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
+                    if self.username:
+                        self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
+                        
                 else:
-                    sys.stdout.write("\033[F") #move the cursor up one line
+                    sys.stdout.write("\033[F")  # Move the cursor up one line
                     print(f"\n{decoded_message}")
-                    print(self.username+": ",end="")
+                    print(f"{self.username}: ", end="")
+                    
             except Exception as e:
-                pass
+                print(f"Error in message reception: {e}")
 
     def send_message(self, message):
         if not self.username:
@@ -97,6 +104,7 @@ class Peer:
             except Exception as e:
                 print(f"Error in discovery loop: {e}")
 
+
     def list_peers(self):
         if self.peer_usernames:
             print("\nList of peers:")
@@ -108,8 +116,8 @@ class Peer:
     def handle_whisper(self, message):
         try:
             
-            _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(":", 1)
+            _, rest = message.split(" ",1)
+            target_username, text = rest.split(":", maxsplit=2)
             target_username = target_username.strip()
             text = text.strip()
             target_peer=self.peer_usernames[target_username]

@@ -31,9 +31,6 @@ class Peer:
             try:
                 message, addr = self.server_socket.recvfrom(1024)
                 decoded_message = message.decode()
-                if addr not in self.peers and addr != (self.host, self.port):
-                    self.peers.append(addr)  # Add new peer
-
                 if decoded_message.startswith('<username>'):
                     _, username = decoded_message.split(':', 1)
                     self.peer_usernames.update({username:addr})
@@ -99,8 +96,7 @@ class Peer:
         if self.peer_usernames:
             print("\nList of peers:")
             for username,addr in self.peer_usernames.items():
-                if username!='None':
-                    print(f"{username}")
+                print(f"{username}")
         else:
             print("No peers found.")
         print()

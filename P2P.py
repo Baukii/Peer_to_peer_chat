@@ -36,7 +36,8 @@ class Peer:
 
                 if decoded_message.startswith('<username>'):
                     _, username = decoded_message.split(':', 1)
-                    self.peer_usernames.update(addr=username)
+                    self.peer_usernames.update({username:addr})
+                    self.send_message(open('chat_log.txt',"rb").read())
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
                 elif decoded_message == 'pong':
@@ -107,28 +108,21 @@ class Peer:
 
     def handle_whisper(self, message):
         try:
-            
-            _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(":", 1)
+            _, rest = message.split(" ", 1)
+            target_username, text = rest.split(":", maxsplit=2)
             target_username = target_username.strip()
             text = text.strip()
-
-            target_peer = None
-            for addr, username in self.peer_usernames.items():
-                if username == target_username:
-                    target_peer = addr
-                    break
-
-            if target_peer:
+            target_ip = self.peer_usernames[target_username]
+            if target_ip:
                 full_message = f"Whisper from {self.username}: {text}"
-                self.server_socket.sendto(full_message.encode(), target_peer)
+                self.server_socket.sendto(full_message.encode(), target_ip)
+                # Save the whisper to file
+                print(f"Whisper sent to {target_username}: {text}")
                 print("Message sent successfully.")
             else:
                 print(f"Error: User '{target_username}' not found.")
-
         except ValueError:
             print("Error: Invalid whisper format. Use '<whisper> username:message'.")
-
     def handle_ping(self):
         print("Sending ping to all peers...")
         for peer in self.peers:

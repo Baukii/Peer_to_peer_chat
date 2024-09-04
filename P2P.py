@@ -36,7 +36,7 @@ class Peer:
 
                 if decoded_message.startswith('<username>'):
                     _, username = decoded_message.split(':', 1)
-                    self.peer_usernames.update(addr=username)
+                    self.peer_usernames.update({username:addr})
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
                 elif decoded_message == 'pong':
@@ -45,8 +45,7 @@ class Peer:
                     self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
                 else:
                     sys.stdout.write("\033[F") #move the cursor up one line
-                    print(f"\n{decoded_message}")
-                    print(self.username+": ",end="")
+                    print(f"\n\n{decoded_message}")
             except Exception as e:
                 pass
 
@@ -99,29 +98,27 @@ class Peer:
     def list_peers(self):
         if self.peer_usernames:
             print("\nList of peers:")
-            for addr, username in self.peer_usernames.items():
-                print(f"{addr}: {username}")
+            for username,addr in self.peer_usernames.items():
+                if username!='None':
+                    print(f"{username}")
         else:
             print("No peers found.")
+        print()
 
     def handle_whisper(self, message):
         try:
-            
-            _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(":", 1)
+            _, rest = message.split(" ",1)
+            target_username, text = rest.split(":", maxsplit=2)
             target_username = target_username.strip()
             text = text.strip()
-
-            target_peer = None
-            for addr, username in self.peer_usernames.items():
-                if username == target_username:
-                    target_peer = addr
-                    break
-
-            if target_peer:
+            if target_username:
                 full_message = f"Whisper from {self.username}: {text}"
-                self.server_socket.sendto(full_message.encode(), target_peer)
-                print("Message sent successfully.")
+                try:
+                    self.server_socket.sendto(full_message.encode(), self.peer_usernames[target_username])
+                except:
+                    print(f"Error: User '{target_username}' not found.")
+                else:
+                    print("\nMessage sent successfully.")
             else:
                 print(f"Error: User '{target_username}' not found.")
 

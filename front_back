@@ -1,198 +1,29 @@
-import asyncio
-import socket
-import threading
-import os
-import time
 import tkinter as tk
-from tkinter import messagebox, scrolledtext
-
-class Peer:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.peers = []
-        self.peer_usernames = {}  # Map peer addresses to usernames
-        self.username = None
-        self.server_socket = self.bind_socket()
-        self.loop = asyncio.new_event_loop()  # Create a new event loop
-        self.tasks = []
-
-    def bind_socket(self):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        server_socket.bind((self.host, self.port))
-        print(f"Bound to {self.host}:{self.port}")
-        return server_socket
-
-    async def listen_for_messages(self):
-        while True:
-            try:
-                loop = asyncio.get_event_loop()
-                message, addr = await loop.run_in_executor(None, self.server_socket.recvfrom, 1024)
-                decoded_message = message.decode()
-
-                if addr not in self.peers and addr != (self.host, self.port):
-                    self.peers.append(addr)  # Add new peer
-
-                if decoded_message.startswith('<username>'):
-                    _, username = decoded_message.split(':', maxsplit=1)
-                    self.peer_usernames[username] = addr
-
-                elif decoded_message == 'ping':
-                    self.server_socket.sendto(b'pong', addr)
-
-                elif decoded_message == 'pong':
-                    pass  # Suppress pong messages
-
-                elif decoded_message.startswith('<discovery>'):
-                    if self.username:
-                        self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
-
-                else:
-                    print(f"\n{decoded_message}")
-                    print(f"{self.username}: ", end="")
-            except Exception as e:
-                print(f"Error in message reception: {e}")
-
-    async def discovery_loop(self):
-        while True:
-            try:
-                # Broadcast discovery message
-                broadcast_message = "<discovery>"
-                self.server_socket.sendto(broadcast_message.encode(), ('<broadcast>', self.port))
-
-                # Wait to receive discovery messages
-                await asyncio.sleep(10)
-            except Exception as e:
-                print(f"Error in discovery loop: {e}")
-
-    def start_network(self):
-        self.tasks.append(asyncio.ensure_future(self.listen_for_messages()))
-        self.tasks.append(asyncio.ensure_future(self.discovery_loop()))
-        self.loop.run_until_complete(asyncio.gather(*self.tasks))
-
-    def send_message(self, message):
-        if not self.username:
-            print("Error: You must be logged in to send messages.")
-            return
-
-        if message.lower() == "<list>":
-            self.list_peers()
-            return
-        elif message.lower().startswith("<whisper>"):
-            self.handle_whisper(message)
-            return
-        elif message.lower() == "<ping>":
-            self.handle_ping()
-            return
-        elif message.lower() == "<status>":
-            self.show_status()
-            return
-        elif message.lower() == "<clear>":
-            self.clear_console()
-            return
-        elif message.lower() == "<help>":
-            self.show_help()
-            return
-        elif message.lower() == "<stop>":
-            self.handle_stop()
-            return
-
-        full_message = f"{self.username}: {message}"
-        for peer in self.peers[1:]:
-            try:
-                self.server_socket.sendto(full_message.encode(), peer)
-            except OSError:
-                print(f"Failed to send message to {peer}")
-
-    def list_peers(self):
-        if self.peer_usernames:
-            print("\nList of peers:")
-            for username in self.peer_usernames.items():
-                print(f"{username}")
-        else:
-            print("No peers found.")
-
-    def handle_whisper(self, message):
-        try:
-            _, rest = message.split(" ", 1)
-            target_username, text = rest.split(":", maxsplit=1)
-            target_username = target_username.strip()
-            text = text.strip()
-            target_peer = self.peer_usernames.get(target_username)
-
-            if target_peer:
-                full_message = f"Whisper from {self.username}: {text}"
-                self.server_socket.sendto(full_message.encode(), target_peer)
-                print("Message sent successfully.")
-            else:
-                print(f"Error: User '{target_username}' not found.")
-
-        except ValueError:
-            print("Error: Invalid whisper format. Use '<whisper> username:message'.")
-
-    def handle_ping(self):
-        print("Sending ping to all peers...")
-        for peer in self.peers:
-            try:
-                self.server_socket.sendto(b'ping', peer)
-            except OSError:
-                print(f"Failed to send ping to {peer}")
-
-    def show_status(self):
-        print(f"Connected peers: {len(self.peers)}")
-        print("List of connected peers:")
-        for peer in self.peers:
-            print(peer)
-
-    def clear_console(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
-
-    def show_help(self):
-        help_text = """
-Available commands:
-<list>       - List all usernames of peers.
-<whisper>    - Send a private message to a specific user (e.g., <whisper> username: message).
-<ping>       - Send a ping to check if a peer is online.
-<clear>      - Clear the chat history from the console.
-<help>       - Show this help message.
-<stop>       - End the chat and exit the chatroom.
-        """
-        print(help_text)
-
-    def handle_stop(self):
-        if self.username:
-            disconnect_message = f"{self.username} has left the chatroom."
-            for peer in self.peers:
-                try:
-                    self.server_socket.sendto(disconnect_message.encode(), peer)
-                except OSError:
-                    print(f"Failed to send disconnect message to {peer}")
-
-            self.peers.clear()
-            self.server_socket.close()
-            print("You have been disconnected from the chatroom.")
-            self.username = None
+from tkinter import messagebox
+from tkinter import scrolledtext
+import threading
 
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Chat Application")
-        self.geometry("450x650")
+        self.title("Upisi username")
+        self.width = 450
+        self.height = 650
+        self.geometry(f"{self.width}x{self.height}")
 
+        self.backend = None  # Backend instance
+        self.username = None
+        
         # Create frames
         self.login_frame = tk.Frame(self, bg="#1e1e1e")
         self.login_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         self.chat_frame = tk.Frame(self, bg="#1e1e1e")
-
+        self.chat_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        
         # Initialize frames
         self.init_login_frame()
         self.init_chat_frame()
-
-        self.username = None
-        self.peer = None
-
+        
         # Display the login frame initially
         self.show_frame(self.login_frame)
     
@@ -227,28 +58,48 @@ class Application(tk.Tk):
         username = self.username_entry.get()
         if username:
             self.username = username
-            self.peer = Peer('0.0.0.0', 15013)
-            self.peer.username = username
-            threading.Thread(target=self.peer.start_network, daemon=True).start
-              # Start network operations in a separate thread
+            self.backend = Peer('0.0.0.0', 15013)  # Initialize backend with same port
+            self.backend.username = self.username  # Set username
             self.show_frame(self.chat_frame)
             self.text_area.insert('end', f"{username} has joined the chat.\n")
             self.text_area.yview('end')
+            
+            # Start a thread to handle incoming messages
+            self.backend_thread = threading.Thread(target=self.run_backend, daemon=True)
+            self.backend_thread.start()
         else:
             messagebox.showwarning("Input Error", "Please enter a username.")
-
+    
+    def run_backend(self):
+        while True:
+            self.backend.listen_for_messages()
+    
     def send_message(self):
         message = self.entry.get()
         if message:
             self.text_area.config(state='normal')
-            self.text_area.insert(tk.END, f"You: {message}\n")
+            self.text_area.insert(tk.END, f"{self.username}: {message}\n")
             self.text_area.config(state='disabled')
-            if self.peer:
-                self.peer.send_message(message)
+            self.text_area.yview(tk.END)
             self.entry.delete(0, tk.END)
+            
+            # Send message to backend
+            if self.backend:
+                self.backend.send_message(message)
     
     def handle_return(self, event):
         self.send_message()
+
+    def save_chat_history(self):
+        try:
+            with open("message_file.txt", 'a') as file:
+                file.write(self.text_area.get("1.0", tk.END))
+        except Exception as e:
+            print(f"Error saving chat history to file: {e}")
+
+    def on_closing(self):
+        self.save_chat_history()
+        self.destroy()
 
 if __name__ == "__main__":
     app = Application()

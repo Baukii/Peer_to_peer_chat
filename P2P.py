@@ -55,7 +55,7 @@ class Peer:
                     print(f"{self.username}: ", end="")
                     
             except Exception as e:
-                print(f"Error in message reception: {e}")
+                pass
 
     def send_message(self, message):
         if not self.username:
@@ -67,9 +67,6 @@ class Peer:
             return
         elif message.lower().startswith("<whisper>"):
             self.handle_whisper(message)
-            return
-        elif message.lower() == "<ping>":
-            self.handle_ping()
             return
         elif message.lower() == "<status>":
             self.show_status()
@@ -154,7 +151,6 @@ class Peer:
 Available commands:
 <list>       - List all usernames of peers.
 <whisper>    - Send a private message to a specific user (e.g., <whisper> username: message).
-<ping>       - Send a ping to check if a peer is online.
 <clear>      - Clear the chat history from the console.
 <help>       - Show this help message.
 <stop>       - End the chat and exit the chatroom.

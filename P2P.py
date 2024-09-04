@@ -4,6 +4,9 @@ import os
 import time
 import sys
 
+def write_to_file(message, file_name="chat_log.txt"):
+    with open(file_name, "a") as f:
+        f.write(message)
 class Peer:
     def __init__(self, host, port):
         self.host = host
@@ -24,19 +27,19 @@ class Peer:
         server_socket.bind((self.host, self.port))
         print(f"Bound to {self.host}:{self.port}")
         return server_socket
-    
 
     def listen_for_messages(self):
         while True:
             try:
-                message, addr = self.server_socket.recvfrom(1024)
+                message, addr = self.server_socket.recvfrom(1)
                 decoded_message = message.decode()
                 if addr not in self.peers and addr != (self.host, self.port):
                     self.peers.append(addr)  # Add new peer
-
+                write_to_file(decoded_message)
                 if decoded_message.startswith('<username>'):
                     _, username = decoded_message.split(':', 1)
-                    self.peer_usernames.update(addr=username)
+                    self.peer_usernames.update({username:addr})
+                    self.send_message(open('chat_log.txt',"rb").read())
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
                 elif decoded_message == 'pong':
@@ -44,15 +47,18 @@ class Peer:
                 elif decoded_message.startswith('<discovery>'):
                     self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
                 else:
-                    sys.stdout.write("\033[F") #move the cursor up one line
-                    print(f"\n{decoded_message}")
-                    print(self.username+": ",end="")
+                    self.handle_message(decoded_message)
             except Exception as e:
                 pass
 
+    def handle_message(self, message):
+        sys.stdout.write("\033[F")  # Move the cursor up one line
+        print(f"\n{message}")
+        write_to_file(f"\n{message}")
+
     def send_message(self, message):
-        if not self.username:
-            print("Error: You must be logged in to send messages.")
+        if not self.username or not message:
+            print("Error: Username and message cannot be empty.")
             return
 
         if message.lower() == "<list>":
@@ -84,7 +90,6 @@ class Peer:
             except OSError:
                 print(f"Failed to send message to {peer}")
 
-
     def discovery_loop(self):
         while True:
             try:
@@ -100,35 +105,30 @@ class Peer:
     def list_peers(self):
         if self.peer_usernames:
             print("\nList of peers:")
-            for addr, username in self.peer_usernames.items():
-                print(f"{addr}: {username}")
+            for username, addr in self.peer_usernames.items():
+                if username != "None":
+                    print(f"{username}")
         else:
             print("No peers found.")
+        print()
 
     def handle_whisper(self, message):
         try:
-            
-            _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(":", 1)
+            _, rest = message.split(" ", 1)
+            target_username, text = rest.split(":", maxsplit=2)
             target_username = target_username.strip()
             text = text.strip()
-
-            target_peer = None
-            for addr, username in self.peer_usernames.items():
-                if username == target_username:
-                    target_peer = addr
-                    break
-
-            if target_peer:
+            target_ip = self.peer_usernames[target_username]
+            if target_ip:
                 full_message = f"Whisper from {self.username}: {text}"
-                self.server_socket.sendto(full_message.encode(), target_peer)
+                self.server_socket.sendto(full_message.encode(), target_ip)
+                # Save the whisper to file
+                print(f"Whisper sent to {target_username}: {text}")
                 print("Message sent successfully.")
             else:
                 print(f"Error: User '{target_username}' not found.")
-
         except ValueError:
             print("Error: Invalid whisper format. Use '<whisper> username:message'.")
-
     def handle_ping(self):
         print("Sending ping to all peers...")
         for peer in self.peers:
@@ -150,9 +150,9 @@ class Peer:
         help_text = """
 Available commands:
 <list>       - List all usernames of peers.
-<whisper>    - Send a private message to a specific user (e.g., <whisper> username: message).
-<ping>       - Send a ping to check if a peer is online.
+<whisper>    - Send a private message to a specific user (e.g., <whisper> username:message).
 <clear>      - Clear the chat history from the console.
+<ping>       - Send a ping to check if a peer is online.
 <help>       - Show this help message.
 <stop>       - End the chat and exit the chatroom.
         """
@@ -169,6 +169,8 @@ Available commands:
 
             self.peers.clear()
             self.server_socket.close()
+            # Save the disconnection message to file
+            self.write_to_file(disconnect_message)
             print("You have been disconnected from the chatroom.")
             self.username = None
 
@@ -188,9 +190,7 @@ Available commands:
             if message.lower() == "<stop>":
                 self.handle_stop()
                 break
-
         print("Exiting chatroom...")
-
 if __name__ == "__main__":
     host = '0.0.0.0'  # Use 0.0.0.0 to bind to all network interfaces
     port = 15013  # Initial port number; it will change if already in use

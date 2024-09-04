@@ -31,26 +31,31 @@ class Peer:
             try:
                 message, addr = self.server_socket.recvfrom(1024)
                 decoded_message = message.decode()
-
+                
                 if addr not in self.peers and addr != (self.host, self.port):
                     self.peers.append(addr)  # Add new peer
-
+                
                 if decoded_message.startswith('<username>'):
-                    _, username = decoded_message.split(':', 1)
-                    self.peer_usernames[addr] = username.strip()
+                    _, username = decoded_message.split(':', maxsplit=1)
+                    self.peer_usernames[username] = addr
+                    
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
+                    
                 elif decoded_message == 'pong':
                     pass  # Suppress pong messages
+                
                 elif decoded_message.startswith('<discovery>'):
-                    # Handle discovery message without printing
-                    self.server_socket.sendto(f"<username>{self.username}".encode(), addr)
+                    if self.username:
+                        self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
+                        
                 else:
-                    sys.stdout.write("\033[F") #move the cursor up one line
+                    sys.stdout.write("\033[F")  # Move the cursor up one line
                     print(f"\n{decoded_message}")
-                    print(self.username+": ",end="")
+                    print(f"{self.username}: ", end="")
+                    
             except Exception as e:
-                pass
+                print(f"Error in message reception: {e}")
 
     def send_message(self, message):
         if not self.username:
@@ -86,6 +91,7 @@ class Peer:
             except OSError:
                 print(f"Failed to send message to {peer}")
 
+
     def discovery_loop(self):
         while True:
             try:
@@ -98,27 +104,23 @@ class Peer:
             except Exception as e:
                 print(f"Error in discovery loop: {e}")
 
+
     def list_peers(self):
         if self.peer_usernames:
             print("\nList of peers:")
-            for addr, username in self.peer_usernames.items():
-                print(f"{addr}: {username}")
+            for username in self.peer_usernames.items():
+                print(f"{username}")
         else:
             print("No peers found.")
 
     def handle_whisper(self, message):
         try:
             
-            _, rest = message.split(maxsplit=2)
-            target_username, text = rest.split(":", 1)
+            _, rest = message.split(" ",1)
+            target_username, text = rest.split(":", maxsplit=2)
             target_username = target_username.strip()
             text = text.strip()
-
-            target_peer = None
-            for addr, username in self.peer_usernames.items():
-                if username == target_username:
-                    target_peer = addr
-                    break
+            target_peer=self.peer_usernames[target_username]
 
             if target_peer:
                 full_message = f"Whisper from {self.username}: {text}"
@@ -153,7 +155,6 @@ Available commands:
 <list>       - List all usernames of peers.
 <whisper>    - Send a private message to a specific user (e.g., <whisper> username: message).
 <ping>       - Send a ping to check if a peer is online.
-<status>     - Show the number of connected peers and their addresses.
 <clear>      - Clear the chat history from the console.
 <help>       - Show this help message.
 <stop>       - End the chat and exit the chatroom.

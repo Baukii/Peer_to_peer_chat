@@ -1,8 +1,8 @@
+import asyncio
 import socket
 import threading
 import os
 import time
-import sys
 
 class Peer:
     def __init__(self, host, port):
@@ -12,10 +12,9 @@ class Peer:
         self.peer_usernames = {}  # Map peer addresses to usernames
         self.username = None
         self.server_socket = self.bind_socket()
-        self.listen_thread = threading.Thread(target=self.listen_for_messages, daemon=True)
-        self.listen_thread.start()
-        self.discovery_thread = threading.Thread(target=self.discovery_loop, daemon=True)
-        self.discovery_thread.start()
+        self.loop = asyncio.get_event_loop()
+        self.listen_task = self.loop.create_task(self.listen_for_messages())
+        self.discovery_task = self.loop.create_task(self.discovery_loop())
 
     def bind_socket(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -24,38 +23,48 @@ class Peer:
         server_socket.bind((self.host, self.port))
         print(f"Bound to {self.host}:{self.port}")
         return server_socket
-    
 
-    def listen_for_messages(self):
+    async def listen_for_messages(self):
         while True:
             try:
-                message, addr = self.server_socket.recvfrom(1024)
+                loop = asyncio.get_event_loop()
+                message, addr = await loop.run_in_executor(None, self.server_socket.recvfrom, 1024)
                 decoded_message = message.decode()
-                
+
                 if addr not in self.peers and addr != (self.host, self.port):
                     self.peers.append(addr)  # Add new peer
-                
+
                 if decoded_message.startswith('<username>'):
                     _, username = decoded_message.split(':', maxsplit=1)
                     self.peer_usernames[username] = addr
-                    
+
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
-                    
+
                 elif decoded_message == 'pong':
                     pass  # Suppress pong messages
-                
+
                 elif decoded_message.startswith('<discovery>'):
                     if self.username:
                         self.server_socket.sendto(f"<username>:{self.username}".encode(), addr)
-                        
+
                 else:
-                    sys.stdout.write("\033[F")  # Move the cursor up one line
                     print(f"\n{decoded_message}")
                     print(f"{self.username}: ", end="")
-                    
             except Exception as e:
                 print(f"Error in message reception: {e}")
+
+    async def discovery_loop(self):
+        while True:
+            try:
+                # Broadcast discovery message
+                broadcast_message = "<discovery>"
+                self.server_socket.sendto(broadcast_message.encode(), ('<broadcast>', self.port))
+
+                # Wait to receive discovery messages
+                await asyncio.sleep(10)
+            except Exception as e:
+                print(f"Error in discovery loop: {e}")
 
     def send_message(self, message):
         if not self.username:
@@ -91,20 +100,6 @@ class Peer:
             except OSError:
                 print(f"Failed to send message to {peer}")
 
-
-    def discovery_loop(self):
-        while True:
-            try:
-                # Broadcast discovery message
-                broadcast_message = "<discovery>"
-                self.server_socket.sendto(broadcast_message.encode(), ('<broadcast>', self.port))
-                
-                # Wait to receive discovery messages
-                time.sleep(10)
-            except Exception as e:
-                print(f"Error in discovery loop: {e}")
-
-
     def list_peers(self):
         if self.peer_usernames:
             print("\nList of peers:")
@@ -115,12 +110,11 @@ class Peer:
 
     def handle_whisper(self, message):
         try:
-            
-            _, rest = message.split(" ",1)
-            target_username, text = rest.split(":", maxsplit=2)
+            _, rest = message.split(" ", 1)
+            target_username, text = rest.split(":", maxsplit=1)
             target_username = target_username.strip()
             text = text.strip()
-            target_peer=self.peer_usernames[target_username]
+            target_peer = self.peer_usernames.get(target_username)
 
             if target_peer:
                 full_message = f"Whisper from {self.username}: {text}"
@@ -176,12 +170,9 @@ Available commands:
             self.username = None
 
     def start(self):
-        self.clear_console()
-        print("Welcome to the peer-to-peer messaging system.")
         self.username = input("Enter your username: ").strip()
         print("Please wait, this might take a moment")
         time.sleep(2)
-
         print("You can now start chatting with peers.")
         print("Type '<help>' to show available commands.")
 
@@ -191,7 +182,6 @@ Available commands:
             if message.lower() == "<stop>":
                 self.handle_stop()
                 break
-
         print("Exiting chatroom...")
 
 if __name__ == "__main__":

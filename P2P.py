@@ -35,8 +35,8 @@ class Peer:
                     self.peers.append(addr)  # Add new peer
 
                 if decoded_message.startswith('<username>'):
-                    _, username = decoded_message.split(':', 1)
-                    self.peer_usernames.update(addr=username)
+                    _, username = decoded_message.split(':', maxsplit=2)
+                    self.peer_usernames.update({username:addr})
                 elif decoded_message == 'ping':
                     self.server_socket.sendto(b'pong', addr)
                 elif decoded_message == 'pong':
@@ -100,8 +100,8 @@ class Peer:
     def list_peers(self):
         if self.peer_usernames:
             print("\nList of peers:")
-            for addr, username in self.peer_usernames.items():
-                print(f"{addr}: {username}")
+            for username in self.peer_usernames.items():
+                print(f"{username}")
         else:
             print("No peers found.")
 
@@ -112,12 +112,7 @@ class Peer:
             target_username, text = rest.split(":", 1)
             target_username = target_username.strip()
             text = text.strip()
-
-            target_peer = None
-            for addr, username in self.peer_usernames.items():
-                if username == target_username:
-                    target_peer = addr
-                    break
+            target_peer=self.peer_usernames[target_username]
 
             if target_peer:
                 full_message = f"Whisper from {self.username}: {text}"

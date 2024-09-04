@@ -3,6 +3,9 @@ import socket
 import threading
 import os
 import time
+import tkinter as tk
+from tkinter import messagebox, scrolledtext
+
 class Peer:
     def __init__(self, host, port):
         self.host = host
@@ -11,10 +14,8 @@ class Peer:
         self.peer_usernames = {}  # Map peer addresses to usernames
         self.username = None
         self.server_socket = self.bind_socket()
-        self.listen_thread = threading.Thread(target=self.listen_for_messages, daemon=True)
-        self.listen_thread.start()
-        self.discovery_thread = threading.Thread(target=self.discovery_loop, daemon=True)
-        self.discovery_thread.start()
+        self.loop = asyncio.new_event_loop()  # Create a new event loop
+        self.tasks = []
 
     def bind_socket(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -65,6 +66,11 @@ class Peer:
                 await asyncio.sleep(10)
             except Exception as e:
                 print(f"Error in discovery loop: {e}")
+
+    def start_network(self):
+        self.tasks.append(asyncio.ensure_future(self.listen_for_messages()))
+        self.tasks.append(asyncio.ensure_future(self.discovery_loop()))
+        self.loop.run_until_complete(asyncio.gather(*self.tasks))
 
     def send_message(self, message):
         if not self.username:
@@ -169,24 +175,81 @@ Available commands:
             print("You have been disconnected from the chatroom.")
             self.username = None
 
-    def start(self):
-        self.username = self.set_username()
-        print("Please wait, this might take a moment")
-        time.sleep(2)
-        print("You can now start chatting with peers.")
-        print("Type '<help>' to show available commands.")
+class Application(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Chat Application")
+        self.geometry("450x650")
 
-        while True:
-            message = input(f"{self.username}: ").strip()
-            self.send_message(message)
-            if message.lower() == "<stop>":
-                self.handle_stop()
-                break
-        print("Exiting chatroom...")
+        # Create frames
+        self.login_frame = tk.Frame(self, bg="#1e1e1e")
+        self.login_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        self.chat_frame = tk.Frame(self, bg="#1e1e1e")
+
+        # Initialize frames
+        self.init_login_frame()
+        self.init_chat_frame()
+
+        self.username = None
+        self.peer = None
+
+        # Display the login frame initially
+        self.show_frame(self.login_frame)
+    
+    def init_login_frame(self):
+        tk.Label(self.login_frame, text="Username:", bg="#000000", fg="#FFFFFF").pack(pady=10)
+        self.username_entry = tk.Entry(self.login_frame, bg="#000000", fg="#FFFFFF")
+        self.username_entry.pack(pady=5)
+        send_button = tk.Button(self.login_frame, text="Send", bg="blue", fg="#FFFFFF", command=self.switch_to_chat)
+        send_button.pack(pady=10)
+    
+    def init_chat_frame(self):
+        self.frame = tk.Frame(self.chat_frame, bg="#1e1e1e")
+        self.frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        self.text_area = scrolledtext.ScrolledText(self.frame, wrap=tk.WORD, state='disabled', bg="#1e1e1e", fg="#ffffff", font=("Arial", 12))
+        self.text_area.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        self.entry_frame = tk.Frame(self.chat_frame, bg="#000000")
+        self.entry_frame.pack(padx=10, pady=(0, 10), fill=tk.X)
+        self.entry = tk.Entry(self.entry_frame, bg="#333333", fg="#ffffff", font=("Arial", 12))
+        self.entry.pack(side=tk.LEFT, padx=5, pady=5, fill=tk.X, expand=True)
+        self.entry.bind('<Return>', self.handle_return)
+        self.send_button = tk.Button(self.entry_frame, text="Send", command=self.send_message, bg="#007acc", fg="#ffffff", font=("Arial", 12, "bold"))
+        self.send_button.pack(side=tk.RIGHT, padx=5, pady=5)
+    
+    def show_frame(self, frame):
+        frame.pack(fill='both', expand=True)
+        if frame == self.login_frame:
+            self.chat_frame.pack_forget()
+        else:
+            self.login_frame.pack_forget()
+    
+    def switch_to_chat(self):
+        username = self.username_entry.get()
+        if username:
+            self.username = username
+            self.peer = Peer('0.0.0.0', 15013)
+            self.peer.username = username
+            threading.Thread(target=self.peer.start_network, daemon=True).start
+              # Start network operations in a separate thread
+            self.show_frame(self.chat_frame)
+            self.text_area.insert('end', f"{username} has joined the chat.\n")
+            self.text_area.yview('end')
+        else:
+            messagebox.showwarning("Input Error", "Please enter a username.")
+
+    def send_message(self):
+        message = self.entry.get()
+        if message:
+            self.text_area.config(state='normal')
+            self.text_area.insert(tk.END, f"You: {message}\n")
+            self.text_area.config(state='disabled')
+            if self.peer:
+                self.peer.send_message(message)
+            self.entry.delete(0, tk.END)
+    
+    def handle_return(self, event):
+        self.send_message()
 
 if __name__ == "__main__":
-    host = '0.0.0.0'  # Use 0.0.0.0 to bind to all network interfaces
-    port = 15013  # Initial port number; it will change if already in use
-
-    peer = Peer(host, port)
-    peer.start()
+    app = Application()
+    app.mainloop()

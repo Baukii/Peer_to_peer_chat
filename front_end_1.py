@@ -55,6 +55,7 @@ class Application(tk.Tk):
     
     def switch_to_chat(self):
         username = self.username_entry.get()
+        Peer.username=username
         if username:
             self.username = username
             self.show_frame(self.chat_frame)
@@ -65,6 +66,7 @@ class Application(tk.Tk):
             self.start_network()
         else:
             messagebox.showwarning("Input Error", "Please enter a username.")
+
 
     def start_network(self):
         self.loop = asyncio.get_event_loop()
